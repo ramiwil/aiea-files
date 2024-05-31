@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rw-gs-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: rw-gs
+        image: gitlab-registry.nrp-nautilus.io/prp/jupyter-stack/prp
+        command:
+        - "python"
+        args:
+        - "/opt/repo/gaussian-splatting/gs-run.py"
+        - "video/VIDEO_NAME.mp4"
+        volumeMounts:
+        - name: git-repo
+          mountPath: /opt/repo
+        resources:
+          limits:
+            memory: 6Gi
+            cpu: "6"
+            nvidia.com/gpu: "1"
+          requests:
+            memory: 4Gi
+            cpu: "1"
+            nvidia.com/gpu: "1"    
+      initContainers:
+      - name: init-clone-repo
+        image: alpine/git
+        args:
+          - clone
+          - --single-branch
+          - https://gitlab.nrp-nautilus.io/ramewils/gaussian-splatting
+          - /opt/repo/gaussian-splatting
+        volumeMounts:
+          - name: git-repo
+            mountPath: /opt/repo
+      volumes:
+      - name: git-repo
+        emptyDir: {}
+      restartPolicy: Never
+  backoffLimit: 5
